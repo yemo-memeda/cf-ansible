@@ -1,6 +1,21 @@
 # kubelet's node name must be `[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*`
 # nodename used by k8s cluster, you also could use the ip address 
 # nodename to k8s, clusterName to etcd
+[zookeeper]
+192.168.133.100 myid=1 
+192.168.133.101 myid=2
+192.168.133.102 myid=3
+
+[kafka]
+192.168.133.100
+192.168.133.101
+192.168.133.102
+
+[es]
+192.168.133.103 esid=1
+192.168.133.104 esid=2
+192.168.133.105 esid=3
+
 [master]
 172.16.1.3 hostname=k8s-m1 nodename=172.16.1.3 clusterName=etcd-001
 172.16.1.4 hostname=k8s-m2 nodename=172.16.1.4 clusterName=etcd-002

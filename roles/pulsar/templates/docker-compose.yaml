@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  zk1:
+    container_name: zk1
+    image: registry.dustess.com:9000/base/zookeeper:3.4.13
+    restart: always
+    hostname: zk1
+    ports:
+      - 5181:2181
+      - 4888:4888
+      - 5888:5888
+    volumes:
+      - /cf-data/pulsar/zookeeper/data:/data
+      - /cf-data/pulsar/zookeeper/datalog:/datalog
+      - /etc/localtime:/etc/localtime:ro # ro的意思是只读(read-only)模式，可以保证其挂载卷不被 Docker 容器内部文件系统配置所覆盖
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zk1:4888:5888 server.2=10.134.73.31:4888:5888 server.3=10.134.73.33:4888:5888
+
+  init-metadata:
+      image: apachepulsar/pulsar:2.7.2
+      hostname: init-metadata
+      restart: on-failure
+      entrypoint: bin/pulsar initialize-cluster-metadata \
+                --cluster pulsar-cluster-01 \
+                --zookeeper 10.134.73.16:5181,10.134.73.31:5181,10.134.73.33:5181 \
+                --configuration-store 10.134.73.16:5181,10.134.73.31:5181,10.134.73.33:5181 \
+                --web-service-url http://pulsar1.private.com:8080,pulsar2.private.com:8080,pulsar3.private.com:8080 \
+                --broker-service-url pulsar://pulsar1.private.com:6650,pulsar2.private.com:6650,pulsar3.private.com:6650 
+     
+  bookie1:
+    container_name: bookie1
+    image: apachepulsar/pulsar:2.7.2
+    hostname: bookie1
+    ports:
+      - "3181:3181"
+    volumes:
+      - /cf-data/pulsar/bookie/data:/pulsar/data/bookkeeper/
+      - /cf-data/pulsar/bookie/conf/bookkeeper.conf:/pulsar/conf/bookkeeper.conf
+    restart: on-failure
+    entrypoint:
+      - sh 
+      - -c  
+      - |
+        echo '10.134.73.16 pulsar1.private.com' >> /etc/hosts
+        echo '10.134.73.31 pulsar2.private.com' >> /etc/hosts
+        echo '10.134.73.33 pulsar3.private.com' >> /etc/hosts
+        bin/pulsar bookie
+
+  broker1:
+    container_name: broker1
+    image: apachepulsar/pulsar:2.7.2
+    hostname: broker1
+    volumes:
+      - /cf-data/pulsar/broker/data:/pulsar/data/broker/
+      - /cf-data/pulsar/broker/conf/broker.conf:/pulsar/conf/broker.conf
+      - /cf-data/pulsar/broker/conf/client.conf:/pulsar/conf/client.conf
+    ports:
+      - "8080:8080"
+      - "6650:6650"
+    restart: on-failure
+    entrypoint:
+      - sh 
+      - -c  
+      - |
+        echo '10.134.73.16 pulsar1.private.com' >> /etc/hosts
+        echo '10.134.73.31 pulsar2.private.com' >> /etc/hosts
+        echo '10.134.73.33 pulsar3.private.com' >> /etc/hosts
+        bin/pulsar broker
+
+  pulsar-manager:
+    container_name: pulsar-manager
+    image: apachepulsar/pulsar-manager:v0.2.0
+    volumes:
+      - /cf-data/pulsar/pulsar-manager/conf/application.properties:/pulsar-manager/pulsar-manager/application.properties
+      - /cf-data/pulsar/pulsar-manager/conf/bkvm.conf:/pulsar-manager/pulsar-manager/bkvm.conf
+      - /cf-data/pulsar/pulsar-manager/conf/secret.key:/pulsar-manager/pulsar-manager/secret.key
+    ports:
+      - "9527:9527"
+      - "7750:7750"
+    environment:
+      SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+    restart: on-failure
+    entrypoint: 
+      - sh 
+      - -c  
+      - |
+        echo '10.134.73.16 pulsar1.private.com' >> /etc/hosts
+        echo '10.134.73.31 pulsar2.private.com' >> /etc/hosts
+        echo '10.134.73.33 pulsar3.private.com' >> /etc/hosts
+        /pulsar-manager/entrypoint.sh &
+        tail -F /pulsar-manager/pulsar-manager/pulsar-manager.log

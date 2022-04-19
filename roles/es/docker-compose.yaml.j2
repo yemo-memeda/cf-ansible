@@ -1,0 +1,33 @@
+version: '3'
+services:
+  yixin-es1:
+    container_name: {{ project_name }}-es{{ hostvars[esid] }}
+    image: registry.dustess.com:9000/base/elasticsearch-ansj-ik:6.6.0
+    ports:
+      - "{{ hostvars[host] }}:9200:9200" 
+      - "{{ hostvars[host] }}:9300:9300"
+    restart: always
+    environment:
+      - cluster.name={{ project_name }}-cf-cluster
+      - network.bind_host={{ hostvars[host] }}
+      - network.publish_host={{ hostvars[host] }}
+      - discovery.zen.ping.unicast.hosts={{ for item in hosts | }}
+      - discovery.zen.minimum_master_nodes=2 
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS={{ ES_JAVA_OPTS }}"
+    network_mode: "host"
+    ulimits:
+      memlock: 
+        soft: -1 
+        hard: -1
+    volumes:
+      - /cf-data/escluster/conf/log4j.properties:/usr/share/elasticsearch/config/log4j.properties
+      - /cf-data/escluster:/usr/share/elasticsearch/data
+      - /cf-data/escluster/logs:/usr/share/elasticsearch/logs 
+  kibana: # 主机需要配置
+    image: registry.dustess.com:9000/base/kibana:6.6.0 
+    ports:
+      - "10.134.73.15:5600:5600" 
+    environment:
+      SERVER_NAME: kibana
+      ELASTICSEARCH_URL: http://10.134.73.15:9200/

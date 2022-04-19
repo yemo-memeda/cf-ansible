@@ -9,6 +9,7 @@ docker:
     - https://registry.docker-cn.com
     - http://hub-mirror.c.163.com/
     - https://docker.mirrors.ustc.edu.cn/
+    - https://registry.dustess.com:9000/
 #  insecureRegistries:
 #    - 100.64.2.52:9999
 #    - 100.64.1.31:9999

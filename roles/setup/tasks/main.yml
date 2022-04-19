@@ -86,10 +86,10 @@
   hostname: name={{ hostname }}
   when: hostname is defined and hostname
 
-- name: Reboot host
-  shell: sleep 2 && shutdown -r now "reboot"
-  async: 1
-  poll: 0
-  ignore_errors: yes
-  tags:
-    - reboot
+# - name: Reboot host
+#   shell: sleep 2 && shutdown -r now "reboot"
+#   async: 1
+#   poll: 0
+#   ignore_errors: yes
+#   tags:
+#     - reboot

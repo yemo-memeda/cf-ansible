@@ -1,9 +1,14 @@
 # PASSWD: zhangguanzhang
 ansible_ssh_port: 22
-ansible_ssh_pass: 'zhangguanzhang'
+ansible_ssh_pass: 'momoda'
+project_name: 'uat'
+data_dir: '/data'
+
+
 
 ntp_type: chrony # or ntp
 ntp_servers: 
+  - 'ntp.aliyun.com'
   - 'cn.pool.ntp.org'
   - 's1b.time.edu.cn'
 
@@ -149,3 +154,6 @@ kubelet:
     logDir: /var/log/kubernetes/kubelet
     logSize: 200M
     logRotate: 7
+
+es:
+  ES_JAVA_OPTS: '-Xms4096m -Xmx4096m'
