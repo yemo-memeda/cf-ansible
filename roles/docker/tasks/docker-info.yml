@@ -1,0 +1,12 @@
+- stat: path=/etc/docker/docker-{{ docker.version }}.info
+  register: docker_info_file
+- block:
+    - command: docker info
+      register: docker_info
+    - blockinfile:
+        path: /etc/docker/docker-{{ docker.version }}.info
+        create: yes
+        block: "{{ docker_info.stdout }}"
+        mode: g=r,o=r
+
+  when: not docker_info_file.stat.exists

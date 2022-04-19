@@ -1,0 +1,51 @@
+- name: 创建数据目录   # 3.4.10开始是必须0700权限,https://github.com/etcd-io/etcd/blob/master/CHANGELOG-3.4.md#breaking-changes
+  file: name={{ item }} state=directory mode=u=rwx,g-rwx,o-rwx
+  with_items:
+  - "{{ etcd.dataDir }}"
+
+- name: 创建etcd相关目录
+  file: name={{ item }} state=directory
+  with_items:
+  - /etc/kubernetes/pki/etcd
+  - /etc/etcd
+  - "{{ etcd.backup.scriptDir }}"
+  - "{{ etcd.backup.dataDir }}"
+
+- set_fact:
+    clusterName: "{{ 'etcd-{0:03d}'.format(play_hosts.index(inventory_hostname)+1) }}"
+  when: clusterName is undefined
+
+
+- name: 分发etcd二进制文件
+  copy: src={{ item }} dest={{ item }} mode=u+x
+  with_items:
+    - /usr/local/bin/etcd
+    - /usr/local/bin/etcdctl
+  tags:
+    - version
+  
+- name: 分发etcd证书
+  copy: src={{ item }} dest=/etc/kubernetes/pki/etcd/ mode=g=r,o=r
+  with_fileglob:
+    - '/etc/kubernetes/pki/etcd/*'
+
+- name: 分发etcd配置文件和systemd文件
+  template: 
+    src: templates/{{ item.src }}
+    dest: "{{ item.dest }}/{{ item.src.split('.')[:-1]|join('.') }}"
+    mode: g=r,o=r
+  with_items:
+  - { src: 'etcd.config.yml.j2', dest: '/etc/etcd' }
+  - { src: 'etcd.service.j2', dest: '/usr/lib/systemd/system' }
+  tags:
+    - version
+
+- name: 启动etcd并设置成开机启动
+  systemd:
+    name: etcd 
+    state: restarted 
+    enabled: yes 
+    daemon_reload: yes
+  when: not ( redo | default(false) )
+  tags:
+    - version
